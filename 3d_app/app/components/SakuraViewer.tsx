@@ -1,12 +1,44 @@
 'use client';
 
-import { Canvas } from '@react-three/fiber';
+import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Environment } from '@react-three/drei';
-import { Suspense } from 'react';
+import { Suspense, useRef, useState, useEffect } from 'react';
+import * as THREE from 'three';
 
 function SakuraModel() {
   const { scene } = useGLTF('/fantasy_sakura.glb');
-  return <primitive object={scene} scale={2} position={[0, -1, 0]} />;
+  const modelRef = useRef<THREE.Group>(null);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useFrame(() => {
+    if (modelRef.current) {
+      const scrollProgress = scrollY / 1000; // Normalize scroll value
+      
+      // Multi-axis rotation with varying speeds
+      modelRef.current.rotation.y = scrollProgress * 2;
+      modelRef.current.rotation.x = Math.sin(scrollProgress) * 0.3;
+      modelRef.current.rotation.z = Math.cos(scrollProgress * 0.5) * 0.1;
+      
+      // Zoom effect via scale
+      const scaleValue = 2 + Math.sin(scrollProgress) * 0.5;
+      modelRef.current.scale.set(scaleValue, scaleValue, scaleValue);
+      
+      // Dynamic positioning
+      modelRef.current.position.y = -1 + Math.sin(scrollProgress * 1.5) * 0.5;
+      modelRef.current.position.x = Math.cos(scrollProgress * 0.8) * 0.3;
+    }
+  });
+
+  return <primitive ref={modelRef} object={scene} scale={2} position={[0, -1, 0]} />;
 }
 
 function Loader() {
